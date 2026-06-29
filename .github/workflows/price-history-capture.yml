@@ -1,0 +1,23 @@
+name: Price history capture
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Capture current prices
+        env:
+          PRICE_HISTORY_URL: https://www.ensarsarraf.com/api/capture_price_history.php
+          PRICE_HISTORY_WRITE_KEY: ${{ secrets.PRICE_HISTORY_WRITE_KEY }}
+        run: node .github/scripts/capture-price-history.mjs
