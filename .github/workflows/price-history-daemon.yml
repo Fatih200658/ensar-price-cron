@@ -37,11 +37,15 @@ jobs:
           PRICE_HISTORY_WRITE_KEY: ${{ secrets.PRICE_HISTORY_WRITE_KEY }}
         run: |
           for i in $(seq 1 20); do
-            echo "Capture cycle $i / 20"
-            node .github/scripts/capture-price-history.mjs
-            if [ "$i" -lt 20 ]; then
-              sleep 900
+            # Recalculate on every cycle so captures stay on :00, :15, :30,
+            # and :45 even if a prior request took longer than expected.
+            now=$(date -u +%s)
+            seconds_to_quarter=$(( (900 - (now % 900)) % 900 ))
+            if [ "$seconds_to_quarter" -gt 0 ]; then
+              sleep "$seconds_to_quarter"
             fi
+            echo "Capture cycle $i / 20"
+            timeout 90s node .github/scripts/capture-price-history.mjs
           done
 
       - name: Restart daemon
