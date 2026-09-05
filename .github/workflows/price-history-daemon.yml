@@ -11,7 +11,9 @@ on:
 
 concurrency:
   group: price-history-daemon
-  cancel-in-progress: true
+  # The successor waits for this run to finish. Cancelling the active run here
+  # can interrupt its own restart request and leave collection stopped.
+  cancel-in-progress: false
 
 permissions:
   actions: write
@@ -20,7 +22,8 @@ permissions:
 jobs:
   daemon:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    # Leave ample room for the restart step before GitHub's runner limit.
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
 
@@ -33,10 +36,10 @@ jobs:
           PRICE_HISTORY_URL: https://www.ensarsarraf.com/api/capture_price_history.php
           PRICE_HISTORY_WRITE_KEY: ${{ secrets.PRICE_HISTORY_WRITE_KEY }}
         run: |
-          for i in $(seq 1 23); do
-            echo "Capture cycle $i / 23"
-            node .github/scripts/capture-price-history.mjs || true
-            if [ "$i" -lt 23 ]; then
+          for i in $(seq 1 20); do
+            echo "Capture cycle $i / 20"
+            node .github/scripts/capture-price-history.mjs
+            if [ "$i" -lt 20 ]; then
               sleep 900
             fi
           done
